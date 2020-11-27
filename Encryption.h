@@ -168,7 +168,7 @@ void HPMv3(char* data, int dataLen) {
 	}
 }
 
-////A simple encryptor based on the Vigener cipher
+//A simple encryptor based on the Vigener cipher
 void SEPEncryption(char data[],char key[],int len,bool keyGen) {
 	//Генерация ключа(если keyGen == true)
 	if (keyGen == true) {
@@ -182,7 +182,7 @@ void SEPEncryption(char data[],char key[],int len,bool keyGen) {
 	}
 }
 
-////A simple decoder with the Vigenère cipher
+//A simple decoder with the Vigenère cipher
 void SEPDecryption(char data[], char key[], int len) {
 	//Reverse shift decoder
 	for (int i = 0; i < len; i++) {
@@ -216,7 +216,7 @@ void SHP_3(char*& hashed, char* data, int dataLen, int hashLen) {
 	//Primary processing
 	HPMv3(data, dataLen);
 
-	////Weak hashing followed by two-step processing
+	//Weak hashing followed by two-step processing
 	//(not an improved hashing method due to the low speed of the improved method compared to the classic one)
 	char* hash = new char[64];
 	SHP_1(hash, data, dataLen, 64, 10);
@@ -230,7 +230,7 @@ void SHP_3(char*& hashed, char* data, int dataLen, int hashLen) {
 	HPMv2(hash1, 256);
 	HPMv3(hash1, 256);
 
-	////Final hashing with an improved algorithm with two-step processing
+	//Final hashing with an improved algorithm with two-step processing
 	SHP_2(hashed, hash1, 256, hashLen);
 	HPMv3(hashed, hashLen);
 	HPMv2(hash1, 256);
