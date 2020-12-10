@@ -187,7 +187,7 @@ void HPMv2(char* data, int dataLen) {
 	}
 }
 
-	//A simple encryptor based on the Vigener cipher
+//A simple encryptor based on the Vigener cipher
 void VijenerEncryption(char data[],char key[],int len,bool keyGen) {
 	if (keyGen == true) {
 		srand(int(data) + len);
