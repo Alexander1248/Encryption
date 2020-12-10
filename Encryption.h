@@ -73,15 +73,15 @@ unsigned int greatest_common_divisor(unsigned int a, unsigned int b) {
 	return greatest_common_divisor(a, b % a);
 }
 
-void RSAKeyGen(unsigned int openKey[2], unsigned int secretKey[2]) {
+void RSAKeyGen(unsigned int openKey[2], unsigned int secretKey[2], int len , int maxlen) {
 	srand(clock());
 
+	//Finding the pseudo-simple n1 and n2
 	const int PNum[54] = { 2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97,101,103,107,109,113,127,131,137,139,149,151,157,163,167,173,179,181,191,193,197,199,211,223,227,229,233,239,241,251 };
 	bool f = false;
 	unsigned int n1, n2;
-	//Finding the pseudo-simple n1
 	while (f != true) {
-		n1 = 1000 + rand() % 64535;
+		n1 = 1 + rand() % maxlen;
 		for (int i = 0; i < 54; i++) if (n1 % PNum[i] != 0) f = true;
 		if (f == true) {
 			f = false;
@@ -93,9 +93,8 @@ void RSAKeyGen(unsigned int openKey[2], unsigned int secretKey[2]) {
 		}
 	}
 	f = false;
-	//Finding the pseudo-simple n2
 	while (f != true) {
-		n2 = 1000 + rand() % 64535;
+		n2 = 1 + rand() % maxlen;
 		for (int i = 0; i < 54; i++) if (n2 % PNum[i] != 0) f = true;
 		if (f == true) {
 			f = false;
@@ -106,34 +105,66 @@ void RSAKeyGen(unsigned int openKey[2], unsigned int secretKey[2]) {
 			if (k >= trunc(log2(n1))) f = true;
 		}
 	}
-	//Calculating the RSA key of the encryption algorithm
 	unsigned int n = n1 * n2;
+	while (n < len || n > maxlen) {
+		while (f != true) {
+			n1 = 1 + rand() % maxlen;
+			for (int i = 0; i < 54; i++) if (n1 % PNum[i] != 0) f = true;
+			if (f == true) {
+				f = false;
+				int k = 0;
+				for (int rounds = 1; rounds < trunc(log2(n1)); rounds++) {
+					if (n1 % (2 + rand() % 65532) == 0) k++;
+				}
+				if (k >= trunc(log2(n1))) f = true;
+			}
+		}
+		f = false;
+		while (f != true) {
+			n2 = 1 + rand() % maxlen;
+			for (int i = 0; i < 54; i++) if (n2 % PNum[i] != 0) f = true;
+			if (f == true) {
+				f = false;
+				int k = 0;
+				for (int rounds = 1; rounds < trunc(log2(n1)); rounds++) {
+					if (n1 % (2 + rand() % 65532) == 0) k++;
+				}
+				if (k >= trunc(log2(n1))) f = true;
+			}
+		}
+		unsigned int n = n1 * n2;
+	}
+	//Calculating the RSA key of the encryption algorithm
 	unsigned int nEyler = (n1 - 1) * (n2 - 1);
-	unsigned int e = 1000 + rand() % (nEyler - 1000);
+	unsigned int e = 1 + rand() % nEyler;
 	double dr = (1 % nEyler) / e;
-	while (greatest_common_divisor(e, nEyler) != 1 and dr == trunc(dr)) e = 1000 + rand() % (nEyler - 1000), dr = (1 % nEyler) / e;
+	while (greatest_common_divisor(e, nEyler) != 1 and dr == trunc(dr)) e = 1 + rand() % nEyler, dr = (1 % nEyler) / e;
 	unsigned int d = dr;
 	openKey[0] = e;
 	secretKey[0] = d;
 	openKey[1] = secretKey[1] = n;
 }
 
-//Work In Progress...
-void RSAEncryption(unsigned int encrypted,unsigned int openKey[2],int message,bool error) {
+void RSAEncryption(unsigned int& encrypted,unsigned int openKey[2],int message,bool error) {
 	if (message >= openKey[1]) error = true;
 	else {
-		encrypted = pow(message, openKey[0]);
-		encrypted = encrypted % openKey[1];
+		encrypted = 1;
+		for (int i = 0; i < openKey[0]; i++) {
+			encrypted = message * encrypted % openKey[1];
+		}
 	}
 }
-void RSADecryption(unsigned int decrypted, unsigned int secretKey[2], int message, bool error) {
+
+void RSADecryption(unsigned int& decrypted, unsigned int secretKey[2], int message, bool error) {
 	if (message >= secretKey[1]) error = true;
 	else {
-		decrypted = pow(message, secretKey[0]);
-		decrypted = decrypted % secretKey[1];
+		decrypted = 1;
+		for (int i = 0; i < secretKey[0]; i++) {
+			decrypted = message * decrypted % secretKey[1];
+		}
 	}
 }
-//...
+
 
 //Transformer values of the first generation
 void HPMv1(char* data, int dataLen) {
@@ -156,21 +187,8 @@ void HPMv2(char* data, int dataLen) {
 	}
 }
 
-//Transformer values of the third generation
-void HPMv3(char* data, int dataLen) {
-	char* hash;
-	for (int i = 0; i < dataLen; i++) {
-		SHP_1(hash, data, dataLen, dataLen, 10);
-		int j = int(hash[i]) % dataLen;
-		char b = data[i];
-		data[i] = data[j];
-		data[j] = b;
-	}
-}
-
-//A simple encryptor based on the Vigener cipher
-void SEPEncryption(char data[],char key[],int len,bool keyGen) {
-	//Генерация ключа(если keyGen == true)
+	//A simple encryptor based on the Vigener cipher
+void VijenerEncryption(char data[],char key[],int len,bool keyGen) {
 	if (keyGen == true) {
 		srand(int(data) + len);
 		for (int i = 0; i < len; i++) key[i] = 33 + rand() % 223;
@@ -183,7 +201,7 @@ void SEPEncryption(char data[],char key[],int len,bool keyGen) {
 }
 
 //A simple decoder with the Vigenère cipher
-void SEPDecryption(char data[], char key[], int len) {
+void  VijenerDecryption(char data[], char key[], int len) {
 	//Reverse shift decoder
 	for (int i = 0; i < len; i++) {
 		data[i] -= key[i];
@@ -191,8 +209,7 @@ void SEPDecryption(char data[], char key[], int len) {
 	}
 }
 
-
-void SHP_2(char*& hashed, char* data,int dataLen, int hashLen) {
+void SHP_2(char*& hashed, char* data, int dataLen, int hashLen) {
 	//Primary processing
 	HPMv2(data, dataLen);
 
@@ -211,48 +228,3 @@ void SHP_2(char*& hashed, char* data,int dataLen, int hashLen) {
 	SHP_1(hashed, hash1, 256, hashLen, 10);
 	HPMv2(hashed, hashLen);
 }
-
-void SHP_3(char*& hashed, char* data, int dataLen, int hashLen) {
-	//Primary processing
-	HPMv3(data, dataLen);
-
-	//Weak hashing followed by two-step processing
-	//(not an improved hashing method due to the low speed of the improved method compared to the classic one)
-	char* hash = new char[64];
-	SHP_1(hash, data, dataLen, 64, 10);
-	HPMv1(hash, 64);
-	HPMv3(hash, 256);
-
-	//Re-hashing with an improved algorithm with three-step processing
-	char* hash1 = new char[256];
-	SHP_2(hash1, hash, 64, 256);
-	HPMv1(hash1, 256);
-	HPMv2(hash1, 256);
-	HPMv3(hash1, 256);
-
-	//Final hashing with an improved algorithm with two-step processing
-	SHP_2(hashed, hash1, 256, hashLen);
-	HPMv3(hashed, hashLen);
-	HPMv2(hash1, 256);
-}
-
-//Work In Progress...
-void SlideEncryptor(char* data, int dataLen) {
-	for (int j = 0; j < dataLen; j++) {
-		for (int i = 0; i < dataLen - j; i++) {
-			char b = data[j];
-			data[j] = data[i];
-			data[i] = b;
-		}
-	}
-}
-void SlideDecryptor(char* data, int dataLen) {
-	for (int j = 0; j < dataLen; j++) {
-		for (int i = dataLen - j - 1; i > 0; i--) {
-			char b = data[j];
-			data[j] = data[i];
-			data[i] = b;
-		}
-	}
-}
-//...
